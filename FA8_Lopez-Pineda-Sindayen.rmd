@@ -1,0 +1,203 @@
+---
+title: "Formative Assessment 8"
+subtitle: "One-Way ANOVA: PlantGrowth"
+author: 
+- "Lopez, Ian Darylle C."
+- "Pineda, Erianne L."
+- "Sindayen, Lorenzo Danilo V."
+output:
+  pdf_document: default
+  word_document:
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggdist)
+library(ggplot2)
+library(knitr)
+library(car)    
+```
+
+---
+
+\begin{center}
+\textit{GitHub Link:} \\
+\url{https://github.com/ChewyGnome/APM1111}
+\end{center}
+
+---
+
+```{r}
+kable(PlantGrowth, caption = "PlantGrowth Dataset")
+```
+
+
+# Introduction
+To determine whether there are any significant differences between three or more variables, the researchers employ the usage of the statistical method known as one-way analysis of variance (ANOVA). The primary aim of this study is to evaluate the effect of experimental treatments on plant growth. In this dataset, there are three different treatment groups - ctrl, trt1, and trt2 - with each representing the different conditions under which the plants were developed. The dependent variable, weight, represents the final dried mass of the plants, which indicates the effects of the treatment on plant growth. The purpose of this report is to assess the statistical relevance of the observed weight differences among these three samples.
+
+
+# Assumptions
+
+### Assumption #1: \textnormal{You have one dependent variable that is measured at the continuous level.}
+### Assumption #2: \textnormal{You have one independent variable that consists of three or more categorical, independent groups.}
+### Assumption #3: \textnormal{You should have independence of observations, which means that there is no relationship between the observations in each group of the independent variable or among the groups themselves.}
+### Assumption #4: \textnormal{There should be no significant outliers in the three or more groups of your independent variable in terms of the dependent variable.}
+### Assumption #5: \textnormal{Your dependent variable should be approximately normally distributed for each group of the independent variable.}
+### Assumption #6. \textnormal{You have homogeneity of variances (i.e., the variance of the dependent variable is equal in each group of your independent variable).}
+
+
+# Null and Alternative Hypotheses
+
+*Null Hypothesis:* 
+There is no significant difference on weight between treatment groups.
+$$H_0: \mu_{ctrl} = \mu_{trt1} = \mu_{trt2}$$
+
+*Alternative Hypothesis:* 
+There is a significant difference on weight between treatment groups.
+$$H_A: \text{At least one treatment group mean is different.}$$
+
+
+# Dataset and Problem
+The plant growth dataset is a built-in dataset in R containing the measurements of 30 samples of plants across three treatment groups (ctrl, trt1, trt2) with each having 10 samples. In this dataset, "group", is the independent variable that defines the treatment group that each plant belongs to. On the other hand, "weight" is used as the dependent variable and is regarded as the metric in finding the final value of the measurement of the dried weight of the plants. 
+
+In this report, the primary research problem addressed is to determine how efficient the two experimental treatments are to the growing plants in comparison to a control condition. The final mass of the plant is an indicator of this, allowing the researchers to find a possible difference in plant development. Specifically, this analysis seeks to investigate whether the differences in plant weight can be attributed to the treatment conditions or not. By employing a one-Way analysis of variance (ANOVA), the researchers aim to test if there are statistically significant differences in mean dried weight across the three groups.
+
+
+# Checking of Assumptions
+### Assumption #1: \textnormal{You have one dependent variable that is measured at the continuous level.}
+**Remark**: The dependent variable for the dataset is *weight*, which is measured at the continuous level.
+
+### Assumption #2: \textnormal{You have one independent variable that consists of three or more categorical, independent groups.}
+**Remark:** The independent variable is *group*, which is divided into three categories: ctrl (control), trt1 (treatment 1), and trt2 (treatment 2).
+
+### Assumption #3: \textnormal{You should have independence of observations, which means that there is no relationship between the observations in each group of the independent variable or among the groups themselves.}
+**Remark:** Each observation is independent with each other, since there is no relationship between the observations in each group of the independent variable or between the groups themselves. 
+
+### Assumption #4: \textnormal{There should be no significant outliers in the three or more groups of your independent variable in terms of the dependent variable.}
+
+```{r}
+ggplot(PlantGrowth, aes(x = group, y = weight, fill = group, color = group)) +
+  stat_halfeye(
+    adjust = 0.5,
+    width = 0.6,
+    .width = 0,
+    justification = -0.3,
+    point_colour = NA
+  ) +
+  geom_boxplot(width = 0.15, outlier.color = NA, alpha = 0.5) +
+  geom_point(position = position_jitter(width = 0.05, seed = 123), size = 1.5, alpha = 0.8) +
+  labs(title = "Raincloud Plot: Weight by Group", x = "Group", y = "Weight") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+**Remark:** There were no significant outliers in the treatment groups in terms of the weight, as assessed by visual inspection of boxplots.
+
+
+### Assumption #5: \textnormal{Your dependent variable should be approximately normally distributed for each group of the independent variable.}
+
+```{r}
+normality_table <- PlantGrowth %>%
+  group_by(group) %>%
+  summarise(
+    statistic = shapiro.test(weight)$statistic,
+    p.value = shapiro.test(weight)$p.value
+  ) %>%
+  mutate(
+    p.value = round(p.value, 3),
+    statistic = round(statistic, 3),
+    Normality = ifelse(p.value > 0.05, "Normal", "Not Normal")
+  )
+
+
+kable(normality_table, 
+      col.names = c("Group", "W Statistic", "p-value", "Conclusion"),
+      caption = "Shapiro-Wilk Test for Normality")
+```
+**Remark:** The weight is approximately normally distributed for each of the treatment groups, as assessed by Shapiro-Wilk’s test ($p > 0.05$).
+
+### Assumption #6. \textnormal{You have homogeneity of variances (i.e., the variance of the dependent variable is equal in each group of your independent variable).}
+
+```{r}
+levene_result <- leveneTest(weight ~ group, data = PlantGrowth)
+
+levene_formatted <- data.frame(
+  Df_Group = levene_result$Df[1],
+  Df_Residuals = levene_result$Df[2],
+  F_Value = round(levene_result$`F value`[1], 3),
+  p_value = round(levene_result$`Pr(>F)`[1], 3)
+)
+
+kable(levene_formatted, 
+      col.names = c("df1", "df2", "F Statistic", "p-value"),
+      caption = "Test for Equality of Variances (Levene's)")
+```
+**Remark:** There was homogeneity of variances of the dependent variable for all treatment groups, as assessed by Levene’s test of homogeneity of variances, ($p > 0.05$).
+
+
+# Computation
+
+## ANOVA Test
+```{r}
+
+anova_model <- aov(weight ~ group, data = PlantGrowth)
+anova_summary <- summary(anova_model)
+
+anova_table <- anova_summary[[1]]
+
+anova_results_df <- data.frame(
+  Source = c("Between Groups", "Within Groups", "Total"),
+  Df = c(anova_table$Df[1], anova_table$Df[2], sum(anova_table$Df)),
+  `Sum of Squares` = c(round(anova_table$`Sum Sq`[1], 3),
+                         round(anova_table$`Sum Sq`[2], 3),
+                         round(sum(anova_table$`Sum Sq`), 3)),
+  `Mean Square` = c(round(anova_table$`Mean Sq`[1], 3),
+                    round(anova_table$`Mean Sq`[2], 3),
+                    ""),
+  F = c(round(anova_table$`F value`[1], 3), "", ""),
+  `p-value` = c(round(anova_table$`Pr(>F)`[1], 3), "", "")
+)
+
+
+kable(anova_results_df, caption = "ANOVA Table for Plant Growth", align = c("l", "c", "c", "c", "c", "c"))
+```
+
+
+## Descriptive Statistics
+```{r}
+descriptive_stats <- PlantGrowth %>%
+  group_by(group) %>%
+  summarise(
+    n = n(),
+    mean = round(mean(weight), 3),
+    sd = round(sd(weight), 3),
+    var = round(var(weight), 3)
+  )
+
+kable(descriptive_stats,
+      caption = "Descriptive Statistics for Plant Weights by Group",
+      col.names = c("Group", "N", "Mean", "SD", "Variance"))
+```
+
+
+## Post Hoc Analysis
+```{r}
+posthoc <- TukeyHSD(anova_model)
+
+tukey_results <- posthoc$group
+tukey_df <- as.data.frame(tukey_results)
+tukey_df$Comparison <- rownames(tukey_df)
+tukey_df <- tukey_df[, c("diff", "lwr", "upr", "p adj")]
+
+colnames(tukey_df) <- c("Difference", "Lower CI", "Upper CI", "Adjusted p-value")
+
+kable(tukey_df, caption = "Post Hoc Tukey HSD Results", align = c("c", "c", "c", "c"))
+```
+
+
+# Reporting
+In this study, a one-way ANOVA was used as the statistical method for examining the differences in weight between the plant samples from three different treatment groups, namely ctrl ($M = 5.03, SD = .58$), trt1 ($M = 4.66, SD = .79$), and trt2 ($M = 5.53, SD = .44$). No outliers were observed from the boxplots. Data was normally distributed for each group as assessed by the Shapiro-Wilk Test ($p > .05$), and there was homogeneity of variances as assessed by Levene's test of homogeneity of variances ($p = .341$).   
+
+It was found that at least one treatment group had a different mean mass in comparison with the others, $F(2, 27) = 4.846, p = 0.016$, showing a statistically significant effect. To find these particular group differences, Tukey's post hoc test was employed. The Tukey post hoc comparisons revealed that the mean weight of the trt2 group was significantly higher than the trt1 group ($p = .012$). However, the control group did not differ significantly from either trt1 ($p = .391$) or trt2 ($p = .198$).
+
+These findings indicate a significant disparity between the two experimental treatments. However, since neither treatment group differed significantly from the ctrl group, there is insufficient evidence to conclude that either treatment promotes or inhibits growth compared to baseline conditions.
