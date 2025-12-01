@@ -282,3 +282,4 @@ The simple main effects analysis indicated that the effect of fertilizer blend w
  
 The mean yields for Soy using Blends X, Y, and Z were 175.80 ($SD = 16.69$), 140.20 ($SD = 12.87$) and 186.40 ($SD = 14.57$), respectively. The post hoc Tukey comparisons revealed fertilizer–crop combinations that yielded significantly different results. For instance, Blend Z produced noticeably higher yields when applied to Soy ($M = 186.4$) compared with Blend Y ($M = 140.2$) when applied to Soy. These findings suggest that depending on the crop type, there are specific fertilizer blends that are more optimal to utilize to maximize yield.
 
+
