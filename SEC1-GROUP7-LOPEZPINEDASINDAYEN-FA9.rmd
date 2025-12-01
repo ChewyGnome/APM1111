@@ -1,0 +1,284 @@
+---
+title: "Formative Assessment 9"
+author:
+- Lopez, Ian Darylle C.
+- Pineda, Erianne L.
+- Sindayen, Lorenzo Danilo V.
+subtitle: "APM1111 Statistical Theory"
+output: 
+  pdf_document:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(knitr)
+library(car) 
+library(ggdist)
+library(ggplot2)
+library(gghalves)
+library(dplyr)
+library(rstatix)
+```
+
+---
+
+\begin{center}
+\textit{GitHub Link:} \\
+\url{https://github.com/ChewyGnome/APM1111}
+\end{center}
+
+---
+
+# Dataset
+```{r}
+data_table <- data.frame(
+  Fertilizer = c("Blend X", "", "", "", "",
+                 "Blend Y", "", "", "", "",
+                 "Blend Z", "", "", "", ""),
+  Wheat = c(123,156,112,100,168,
+            135,130,176,120,155,
+            156,180,147,146,193),
+  Corn = c(128,150,174,116,109,
+           175,132,120,187,184,
+           186,138,178,176,190),
+  Soy = c(166,178,187,153,195,
+          140,145,159,131,126,
+          185,206,188,165,188),
+  Rice = c(151,125,117,155,158,
+           167,183,142,167,168,
+           175,173,154,191,169)
+)
+
+kable(data_table,
+      caption = "Crop Yield by Fertilizer Blend and Crop Type")
+```
+
+```{r include=FALSE}
+df <- data.frame(
+  Fertilizer = rep(c("Blend X", "Blend Y", "Blend Z"), each = 20),
+  Crop = rep(rep(c("Wheat", "Corn", "Soy", "Rice"), each = 5), 3),
+  Yield = c(
+    123,156,112,100,168, 
+    128,150,174,116,109, 
+    166,178,187,153,195, 
+    151,125,117,155,158,
+
+    135,130,176,120,155, 
+    175,132,120,187,184, 
+    140,145,159,131,126, 
+    167,183,142,167,168,
+
+    156,180,147,146,193, 
+    186,138,178,176,190, 
+    185,206,188,165,188, 
+    175,173,154,191,169
+  )
+)
+```
+
+# Introduction
+The study aims to evaluate the effectiveness of three different fertilizer blends (Blends X, Y, and Z) across four crop types (Wheat, Corn, Soy, and Rice) and assess their impact on crop yield. The objectives are to determine the effects of the different fertilizer blends and the crop types on crop yield as well as to identify any interaction effects. In order to meet these criteria, a two-way ANOVA was utilized to analyze the given data.
+
+# Problem
+A new fertilizer has been developed to increase the yield on crops, and the makers of the fertilizer want to better understand which of the three formulations (blends) of this fertilizer are most effective for wheat, corn, soybeans and rice (crops). They test each of the three blends on 5 samples of each of the four types of crops. 
+
+# Assumptions
+
+### Assumption #1: \textnormal{Your dependent variable should be measured at the continuous level (i.e., they are interval or ratio variables).}
+
+### Assumption #2: \textnormal{Your two independent variables should each consist of two or more categorical, independent groups.}
+
+### Assumption #3: \textnormal{You should have independence of observations, which means that there is no relationship between the observations in each group or between the groups themselves.}
+
+### Assumption #4: \textnormal{There should be no significant outliers.}
+
+### Assumption #5: \textnormal{Your dependent variable should be approximately normally distributed for each combination of the groups of the two independent variables.}
+
+### Assumption #6. \textnormal{There needs to be homogeneity of variances for each combination of the groups of the two independent variables.}
+
+
+# Hypotheses
+
+## A. Main Effect of Fertilizer
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Null Hypothesis $(H_0)$:** There is no difference in mean crop yield between the three fertilizer blends.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Alternative Hypothesis $(H_A)$:** At least one fertilizer blend has a different mean yield.
+
+## B. Main Effect of Crop 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Null Hypothesis $(H_0)$:** There is no difference in mean crop yield between the four crop types.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Alternative Hypothesis $(H_A)$:** At least one crop type has a different mean yield.
+
+## C. Interaction Effect Between Fertilizer and Crop
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Null Hypothesis $(H_0)$:** There is no significant interaction effect on yield between fertilizer blend and crop type.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Alternative Hypothesis $(H_A)$:** There is a significant interaction effect on yield between fertilizer blend and crop type.
+
+
+# Checking of Assumptions
+### Assumption #1: \textnormal{Your dependent variable should be measured at the continuous level (i.e., they are interval or ratio variables).}
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: The dependent variable, crop yield, is measured at the continuous level.
+
+### Assumption #2: \textnormal{Your two independent variables should each consist of two or more categorical, independent groups.}
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: The two independent variables, fertilizer blend and crop type, each consist of two or more categorical, independent groups.
+
+### Assumption #3: \textnormal{You should have independence of observations, which means that there is no relationship between the observations in each group or between the groups themselves.}
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: The samples are independent of one another, where there is no relationship between the observations in each group of the
+independent variable or between the groups themselves.
+
+### Assumption #4: \textnormal{There should be no significant outliers.}
+
+```{r}
+ggplot(df, aes(x = Crop, y = Yield, fill = Fertilizer)) +
+
+  geom_violin(
+    aes(color = Fertilizer),
+    width = 0.8,
+    alpha = 0.4,
+    position = position_dodge(width = 0.8),
+    trim = FALSE
+  ) +
+
+  geom_boxplot(
+    width = 0.15,
+    position = position_dodge(width = 0.8),
+    alpha = 0.7,
+    outlier.shape = NA
+  ) +
+
+  geom_jitter(
+    position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.8),
+    alpha = 0.6,
+    size = 2
+  ) +
+
+  scale_fill_brewer(palette = "Set2") +
+  scale_color_brewer(palette = "Set2") +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Raincloud Plot of Yield by Crop and Fertilizer",
+    x = "Crop Type",
+    y = "Yield",
+    fill = "Fertilizer",
+    color = "Fertilizer"
+  )
+
+```
+
+**Remark**: There are no significant outliers as assessed by visual inspection of the raincloud plot.
+
+### Assumption #5: \textnormal{Your dependent variable should be approximately normally distributed for each combination of the groups of the two independent variables.}
+```{r}
+shapiro_results <- df %>%
+  group_by(Fertilizer, Crop) %>%
+  summarise(
+    W = round(shapiro.test(Yield)$statistic, 4),
+    p = round(shapiro.test(Yield)$p.value, 4),
+    .groups = 'drop'
+  )
+
+kable(shapiro_results, caption = "Shapiro–Wilk Test of Normality")
+```
+**Remark**: The dependent variable, crop yield, is approximately normally distributed for each combination of the groups of fertilizer blend and crop type, as assessed by Shapiro-Wilk test of normality, (p > 0.05).
+
+### Assumption #6. \textnormal{There needs to be homogeneity of variances for each combination of the groups of the two independent variables.}
+```{r}
+levene_result <- leveneTest(Yield ~ Fertilizer * Crop, data = df)
+
+levene_table <- data.frame(
+  Df = levene_result$Df,
+  "F" = round(levene_result$`F value`, 4),
+  "p" = round(levene_result$`Pr(>F)`, 4)
+)
+
+kable(levene_table, caption = "Levene’s Test for Equality of Variance")
+```
+**Remark**: The variances for each combination of the groups of fertilizer blend and crop type are homogeneous, as assessed by Levene’s test of equality of variances, (p = 0.755).
+
+# Computation
+
+## Descriptive Statistics
+```{r}
+descriptive_stats <- df %>%
+group_by(Fertilizer, Crop) %>%
+summarise(
+Mean = round(mean(Yield), 2),
+SD = round(sd(Yield), 2),
+Min = min(Yield),
+Max = max(Yield),
+.groups = "drop"
+)
+
+kable(descriptive_stats, caption = "Descriptive Statistics for Yield by Fertilizer and Crop Type")
+```
+
+## ANOVA Test
+```{r}
+anova_results <- df %>% 
+  anova_test(Yield ~ Fertilizer * Crop, effect.size = "pes")
+
+kable(anova_results, 
+      caption = "Two-Way ANOVA Results",
+      digits = 3)
+```
+
+**Remark**: There was a statistically significant interaction between fertilizer blend and crop type on yield, $F(6, 48) = 2.35, p = .046$. Thus, an analysis of simple main effects for fertilizer blend and crop type was performed with statistical significance receiving a Bonferroni adjustment and not being rejected at the p < .0125 level.
+
+```{r fig.cap="Interaction Plot of Fertilizer and Crop on Yield"}
+ggplot(df, aes(x = Crop, y = Yield, color = Fertilizer, group = Fertilizer)) +
+  stat_summary(fun = mean, geom = "point", size = 3) +
+  stat_summary(fun = mean, geom = "line", linewidth = 1) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2) +
+  labs(title = "Interaction Effect: Fertilizer Blend by Crop Type",
+       y = "Mean Yield (+/- SE)") +
+  theme_minimal() +
+  scale_color_brewer(palette = "Set2")
+```
+
+## Simple Main Effects Analysis
+```{r}
+simple_main_effects_fert <- df %>%
+  group_by(Crop) %>%
+  anova_test(Yield ~ Fertilizer, effect.size = "pes")
+
+kable(simple_main_effects_fert, 
+      caption = "Simple Main Effects of Fertilizer at each Crop Type")
+```
+
+**Remark**: Based on results, Soy was the only crop with a significant difference ($p = .0009$). As such, all pairwise comparisons were run for the significant simple main effect, Soy.
+
+```{r}
+simple_main_effects_crop <- df %>%
+  group_by(Fertilizer) %>%
+  anova_test(Yield ~ Crop, effect.size = "pes")
+
+kable(simple_main_effects_crop, 
+      caption = "Simple Main Effects of Crop at each Fertilizer Blend")
+```
+
+**Remark**: Based on results, no p-values were less than 0.0125, indicating that for any given fertilizer, the crop type did not significantly change the yield. As such, pairwise comparisons were not run for this direction.
+
+
+## Post Hoc Analysis
+```{r}
+pairwise_comparisons <- df %>%
+  group_by(Crop) %>%
+  tukey_hsd(Yield ~ Fertilizer)
+
+soy_comparisons <- pairwise_comparisons %>% 
+  filter(Crop == "Soy")
+
+kable(soy_comparisons, 
+      caption = "Post Hoc Comparisons (Tukey) for Soy")
+```
+
+# Reporting
+The study employed a two-way ANOVA test to evaluate the impact of fertilizer blend (Blend X, Y, and Z) and crop type (Wheat, Corn, Soy, and Rice) on crop yield. Assumptions were initially verified before performing analysis. Outliers were assessed by visual inspection of a raincloud plot; normality was assessed by Shapiro-Wilk's normality test; homogeneity of variances was assessed by Levene's test. Results showed that there were no outliers, residuals were normally distributed ($p > .05$), and homogeneity of variances was met ($p = .755$).
+
+Based on findings, the effects of fertilizer blend had a statistically significant effect on crop yield, $F(2, 48) = 9.93, p < .001,$ partial $\eta^2 = .293$, indicating that the mean yields between the Blends X, Y, and Z differed. The main effect of crop type on yield, however, was not statistically significant, $F(3, 48) = 2.57, p = .065,$ partial $\eta^2 = .139$. It is important to note that there was a statistically significant interaction between fertilizer blend and crop type, $F(6, 48) = 2.35, p = .046,$ partial $\eta^2 = .227$, suggesting that each fertilizer blend's effectiveness on yield depended on the crop type used. Thus, an analysis of simple main effects for fertilizer blend was performed for each crop type, with statistical significance receiving a Bonferroni adjustment and not being rejected at the $p < .0125$ level.
+
+The simple main effects analysis indicated that the effect of fertilizer blend was statistically significant for Soy, $F(2, 12) = 13.38, p < .001,$ partial $\eta^2 = .690$. This shows a significant difference in yield across different fertilizer blends for Soy. On the other hand, the simple main effects of fertilizer were not statistically significant for the other crop types: Wheat ($p = .143$), Corn ($p = .603$), or Rice ($p = .844$). All pairwise comparisons were run for the significant simple main effect (Soy) with reported 95% confidence intervals and p-values Tukey-adjusted.
+ 
+The mean yields for Soy using Blends X, Y, and Z were 175.80 ($SD = 16.69$), 140.20 ($SD = 12.87$) and 186.40 ($SD = 14.57$), respectively. The post hoc Tukey comparisons revealed fertilizer–crop combinations that yielded significantly different results. For instance, Blend Z produced noticeably higher yields when applied to Soy ($M = 186.4$) compared with Blend Y ($M = 140.2$) when applied to Soy. These findings suggest that depending on the crop type, there are specific fertilizer blends that are more optimal to utilize to maximize yield.
+
