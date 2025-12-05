@@ -1,0 +1,285 @@
+---
+title: "Formative Assessment 10"
+author:
+- Lopez, Ian Darylle C.
+- Pineda, Erianne L.
+- Sindayen, Lorenzo Danilo V.
+subtitle: APM1111 Statistical Theory
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(knitr)
+library(ggpubr)
+library(rstatix)
+```
+
+---
+
+\begin{center}
+\textit{GitHub Link:} \\
+\url{https://github.com/ChewyGnome/APM1111}
+\end{center}
+
+---
+
+# Dataset
+
+```{r}
+cholesterol_data <- data.frame(
+  ID = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18),
+  Before = c(6.42, 6.76, 6.56, 4.8, 8.43, 7.49, 8.05, 5.05, 5.77, 
+             3.91, 6.77, 6.44, 6.17, 7.67, 7.34, 6.85, 5.13, 5.73),
+  After4Weeks = c(5.83, 6.2, 5.83, 4.27, 7.71, 7.12, 7.25, 4.63, 5.31, 
+                  3.7, 6.15, 5.59, 5.56, 7.11, 6.84, 6.4, 4.52, 5.13),
+  After8Weeks = c(5.75, 6.13, 5.71, 4.15, 7.67, 7.05, 7.1, 4.67, 5.33, 
+                  3.66, 5.96, 5.64, 5.51, 6.96, 6.82, 6.29, 4.45, 5.17),
+  Margarine = c("B", "B", "B", "A", "B", "A", "B", "A", "B", 
+                "A", "B", "B", "A", "A", "A", "B", "A", "B")
+)
+
+df_long <- cholesterol_data %>%
+  pivot_longer(
+    cols = c("Before", "After4Weeks", "After8Weeks"),
+    names_to = "Time",
+    values_to = "Cholesterol"
+  )
+
+df_long$ID <- as.factor(df_long$ID)
+df_long$Margarine <- as.factor(df_long$Margarine)
+df_long$Time <- factor(df_long$Time, levels = c("Before", "After4Weeks", "After8Weeks"))
+
+kable(cholesterol_data, caption = "Cholesterol Over Time Data Set")
+```
+
+
+# Introduction
+A requirement in the management of one's cardiovascular health is following consumption-based interventions aimed at managing lipid levels, specifically cholesterol, which is an essential biological indicator for heart health. This study explores the effects of two different margarine brands (Brand A and Brand B) on cholesterol levels over the span of 8 weeks.
+
+Cholesterol levels were measured at three different time points. The first is measured before consumption, the second is measured after 4 weeks of consumption, while the last is measured after 8 weeks of consumption. Each participant belonged to one of two groups depending on which margarine was consumed. 
+With the experiment design consisting of a between-subjects factor (Margarine) and a within-subjects factor (Time), a two-way mixed model Analysis of Variance (ANOVA), otherwise known as split-plot ANOVA, was applicable to the study. 
+
+In this analysis, the primary objective was determining the change in cholesterol levels over a period of two months and whether the specific margarine brand consumed factored on that change in cholesterol level. The study also aims to explore whether cholesterol levels decreased over time regardless of margarine brand, if one brand was more effective than the other, and whether there was an interaction between margarine and time.
+
+# Assumptions
+
+### Assumption #1: \textnormal{You have a continuous dependent variable.}
+
+### Assumption #2: \textnormal{You have one between-subjects factor (i.e., independent variable) that is categorical with two or more categories.}
+
+### Assumption #3: \textnormal{You have one within-subjects factor (i.e., independent variable) that is categorical with two or more categories.}
+
+### Assumption #4: \textnormal{There should be no significant outliers in any cell of the design.}
+
+### Assumption #5: \textnormal{The dependent variable should be approximately normally distributed for each cell of the design.}
+
+### Assumption #6: \textnormal{The variance of your dependent variable should be equal between the groups of the between-subjects factor, referred to as the assumption of homogeneity of variances.}
+
+### Assumption #7: \textnormal{There should be homogeneity of covariances.}
+
+### Assumption #8: \textnormal{The variance of the differences between groups should be equal, referred to as the assumption of sphericity.}
+
+
+# Hypotheses
+
+## A. Main Effect of Between-Subjects Factor (Margarine)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Null Hypothesis $(H_0)$:** There is no significant difference in mean cholesterol levels between Margarine A and Margarine B.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Alternative Hypothesis $(H_A)$:** There is a significant difference in mean cholesterol levels between Margarine A and Margarine B.
+
+## B. Main Effect of Within-Subjects Factor (Time)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Null Hypothesis $(H_0)$:** There is no significant difference in the mean cholesterol levels across the three time points.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Alternative Hypothesis $(H_A)$:** There is a significant difference in the mean cholesterol levels across the three time points.
+
+## C. Interaction Effect (Time × Margarine)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Null Hypothesis $(H_0)$:** There is no significant interaction between time and margarine on cholesterol levels.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Alternative Hypothesis $(H_A)$:** There is a significant interaction between time and margarine on cholesterol levels.
+
+
+# Checking of Assumptions
+
+### Assumption #1: \textnormal{You have a continuous dependent variable.}
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: The dependent variable is cholesterol level and is continuous.
+
+### Assumption #2: \textnormal{You have one between-subjects factor (i.e., independent variable) that is categorical with two or more categories.}
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: The between-subjects factor is the brand of margarine and has 2
+categories.
+
+### Assumption #3: \textnormal{You have one within-subjects factor (i.e., independent variable) that is categorical with two or more categories.}
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: The within-subjects factor is time and has 3 categorical levels (before, after 4 weeks, after 8 weeks).
+
+### Assumption #4: \textnormal{There should be no significant outliers in any cell of the design.}
+
+```{r}
+ggboxplot(
+  df_long, 
+  x = "Time", 
+  y = "Cholesterol", 
+  color = "Margarine", 
+  palette = c("#007E6E", "#D34E4E"),
+  add = "jitter" 
+) +
+  labs(title = "Boxplot of Cholesterol Distribution")
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: There are no significant outliers as assessed by visual inspection of the boxplot.
+
+### Assumption #5: \textnormal{The dependent variable should be approximately normally distributed for each cell of the design.}
+
+```{r}
+normality_results <- df_long %>%
+  group_by(Margarine, Time) %>%
+  shapiro_test(Cholesterol)
+
+kable(normality_results, caption = "Shapiro-Wilk Test for Normality")
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: The dependent variable, cholesterol level, is approximately normally distributed for each combination of the groups of margarine and time, as assessed by Shapiro-Wilk test of normality, ($p > 0.05$)
+
+
+### Assumption #6: \textnormal{The variance of your dependent variable should be equal between the groups of the between-subjects factor, referred to as the assumption of homogeneity of variances.}
+
+```{r}
+levene_results <- df_long %>%
+  group_by(Time) %>%
+  levene_test(Cholesterol ~ Margarine)
+
+kable(levene_results, caption = "Levene's Test for Homogeneity of Variances")
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: Homogeneity of variances was met for the 'Before' ($p > .05$) and 'After 4 weeks' ($p > .05$) time points. However, the assumption was not met for the 'After 8 weeks' time point ($p < .05$).
+
+### Assumption #7: \textnormal{There should be homogeneity of covariances.}
+
+```{r}
+box_m_result <- box_m(cholesterol_data[, c("Before", "After4Weeks", "After8Weeks")], cholesterol_data$Margarine)
+
+kable(box_m_result, caption = "Box's M-test for Homogeneity of Covariances")
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: Homogeneity of covariances was met ($p > .05$) which indicates that the covariance matrices are equal across groups.
+
+### Assumption #8: \textnormal{The variance of the differences between groups should be equal, referred to as the assumption of sphericity.}
+
+```{r}
+res.aov <- df_long %>%
+  anova_test(dv = Cholesterol, wid = ID, within = Time, between = Margarine)
+
+sphericity_table <- res.aov[["Mauchly's Test for Sphericity"]]
+kable(sphericity_table, caption = "Mauchly's Test for Sphericity")
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: The assumption of sphericity was not met ($p < .05$) which indicates that the variances of the differences among the three time points are not equal. Thus, a correction must be applied to account for the violation. In this case, the Greenhouse-Geisser correction was utilized.
+
+
+## Descriptive Statistics
+
+```{r}
+descriptives <- df_long %>%
+  group_by(Margarine, Time) %>%
+  get_summary_stats(Cholesterol, type = "mean_sd")
+
+kable(descriptives, caption = "Descriptive Statistics")
+```
+
+
+## Two-Way Mixed ANOVA Test
+
+```{r}
+anova_table <- get_anova_table(res.aov, correction = "GG")
+
+kable(anova_table, caption = "Two-Way Mixed ANOVA (Greenhouse-Geisser Corrected)")
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: As observed, there was a significant main effect of Time ($p < .05$), indicating that cholesterol levels changed across time points. However, there was no significant main effect of Margarine, ($p > .05$), indicating that the overall mean cholesterol levels did not differ between brands. There was also a significant Time × Margarine interaction ($p < .05$). Thus, the effect of time differed between Margarine A and B.
+
+```{r}
+ggline(
+  df_long, 
+  x = "Time", 
+  y = "Cholesterol", 
+  color = "Margarine",
+  add = "mean_se",
+  palette = c("#007E6E", "#D34E4E"),
+  title = "Interaction Plot: Margarine Brand and Time",
+  ylab = "Mean Cholesterol Level",
+  xlab = "Time Points"
+) +
+  theme_minimal()
+```
+
+
+
+## Simple Main Effects Analysis
+
+### (a) Simple Main Effects Analysis of Time per Margarine Brand
+```{r}
+one_way_time <- df_long %>%
+  group_by(Margarine) %>%
+  anova_test(dv = Cholesterol, wid = ID, within = Time) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+
+kable(one_way_time, caption = "Simple Main Effect of Time per Margarine Brand")
+```
+
+### (b) Simple Main Effects Analysis of Margarine per Time Point
+```{r}
+one_way_margarine <- df_long %>%
+  group_by(Time) %>%
+  anova_test(dv = Cholesterol, wid = ID, between = Margarine) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+
+kable(one_way_margarine, caption = "Simple Main Effect of Margarine per Time Point")
+```
+
+
+
+## Post Hoc Analysis
+
+### (a) Pairwise Comparisons for Time (per Margarine)
+```{r}
+pwc_time <- df_long %>%
+  group_by(Margarine) %>%
+  pairwise_t_test(
+    Cholesterol ~ Time, 
+    paired = TRUE,
+    p.adjust.method = "bonferroni"
+  )
+
+kable(pwc_time, caption = "Pairwise Comparisons: Time levels within Margarine")
+```
+
+### (b) Pairwise Comparisons for Margarine (per Time Point)
+```{r}
+pwc_margarine <- df_long %>%
+  group_by(Time) %>%
+  pairwise_t_test(
+    Cholesterol ~ Margarine, 
+    paired = FALSE, # Independent t-test
+    p.adjust.method = "bonferroni"
+  )
+
+kable(pwc_margarine, caption = "Pairwise Comparisons: Margarine levels within Time")
+```
+
+# Reporting
+
+In this study, the researchers employed the two-way mixed ANOVA test to evaluate the effect of two Margarine brands (brand A and brand B) and three different time points (Before, After 4 Weeks, and After 8 Weeks) on cholesterol levels. Assumptions were verified before performing analysis. Outliers were assessed by visual inspection of a boxplot; normality was assessed by Shapiro-Wilk's normality test; homogeneity of variances was assessed by Levene's test; homogeneity of covariances was assessed by Box’s M-test. Results showed that there were no outliers, residuals were normally distributed ($p > .05$), homogeneity of variances was met for the 'Before' and 'After 4 weeks' time points ($p > .05$) but was not met for the 'After 8 weeks' ($p < .05$) time point. Homogeneity of covariances was also met ($p > .05$). However, Mauchly’s test indicated that the assumption of sphericity was violated for the Time factor, ($W = 0.462, p = .003$). Due to these findings, degrees of freedom were corrected using Greenhouse-Geisser estimates of sphericity.
+
+ANOVA results showed that there was no statistically significant main effect of margarine brand on cholesterol levels, $F(1, 16) = 1.896, p = .187,\eta^2_G = .106$. These statistics support the notion that cholesterol levels did not differ significantly between participants who used Margarine A and Margarine B. However, there was a statistically significant main effect of time on cholesterol levels, $F(1.30, 20.81) = 249.008, p < .001, \eta^2_G = .065$. This indicates that the cholesterol levels have major differences that span over the three different time points. The interaction between Margarine brand and Time was also statistically significant, $F(1.30, 20.81) = 4.814, p = .031, \eta^2_G = .001$. This suggests that the pattern of change in cholesterol level over time differed between the two margarine brands.
+
+Simple main effects analysis was executed to inspect the effect of time within each margarine brand. For Brand A, there was a significant effect of time on cholesterol levels, $p < .001$. Pairwise comparisons with Bonferroni correction revealed that cholesterol levels significantly decreased from the beginning ($M=5.95$) to 4 Weeks ($M=5.47, p < .01$) and to 8 Weeks ($M=5.41, p < .01$). Similarly, for Brand B, there was also a significant effect of time on cholesterol levels, $p < .001$, where cholesterol levels significantly decreased from the beginning ($M=6.78$) to 4 Weeks ($M=6.14, p < .001$) and to 8 Weeks ($M=6.08, p < .001$).
+
+# Conclusion
+The results of this study indicated that both Margarine A and Margarine B were associated with significant reductions in cholesterol levels over time. While the interaction effect was statistically significant ($p = .031$), the effect size was negligible, and post-hoc analysis showed that both margarine brands had similar trajectories of having a major drop on cholesterol level during the first four weeks but stabilized in the time leading up to 8 weeks. Thus, time proved to have a significant effect on improving cholesterol levels, while the specific margarine brand did not.
