@@ -1,0 +1,261 @@
+---
+title: "Summative Assessment 2"
+author: "Sindayen, Lorenzo Danilo V."
+subtitle: APM1111 Statistical Theory
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+html_document:
+  df_print: paged
+---
+
+```{r setup, include=FALSE} 
+library(tidyverse)
+library(knitr)
+library(ggpubr)
+library(rstatix)
+library(car)
+```
+
+---
+
+\begin{center}
+\textit{GitHub Link:} \\
+\url{https://github.com/ChewyGnome/APM1111}
+\end{center}
+
+---
+
+# Dataset
+```{r}
+df <- data.frame(
+AD_Status = factor(
+c(rep("Transgenic (AD)", 20), rep("Wild Type", 20))
+),
+Treatment = factor(rep(1:4, each = 5, times = 2)),
+Training = c(
+12,15,13,12,14,
+15,17,16,17,14,
+13,14,18,15,16,
+14,13,12,14,15,
+17,16,17,14,13,
+14,18,16,17,14,
+13,14,18,15,16,
+14,13,12,14,15
+),
+Memory = c(
+10,12,13,10,13,
+13,13,14,15,11,
+12,11,15,10,14,
+12,11,10,13,10,
+9, 8,10, 8, 8,
+7,10, 5, 9, 7,
+8, 7, 9, 8, 9,
+7, 9, 5, 8, 4
+)
+)
+
+kable(df, caption = "Alzheimer’s Mice Dataset")
+
+
+```
+
+# Introduction
+The Alzheimer’s disease is a progressive neurodegenerative disorder which damages of cognitive ability the cognitive ability of a person. Due to this, the researchers of the study employed the usage of experimental models in mice, this is because of the similar biological structure of the mice and human. Through this method, the effectivity of pharmacological treatments could reach more reliable results that could help with alleviating the disease. 
+
+In this study, the group of "mice" were divided into two different batches to achieve more reliable results. The two groups namely are the transgenic mice genetically modified to model Alzheimer’s disease and wild type mice without genetic modifications. In both batches, each of the mouse were administered to the different drug treatments, examined in a maze task to measure memory.
+
+The purpose of this study is to evaluate whether drug treatment and AD status has a significant influence on maze performance and whether an interaction exists between these factors. In this study as well, two particular subtopics were explored namely; Training Day errors and another for Memory Day errors.
+
+# Problem
+In this study, the mice were used as an experimenting ground to test drugs that may be able to counteract with the Alzheimer’s disease. A disease so prevalent that it causes cognitive disorder within the human brain. To have a direct comparison of the effects half the mice are transgenic and genetically modified to have Alzheimer’s disease, on the other hand, the other half are free from the Alzheimer’s disease. This is to find whether or not there is a significant difference between the actions of both samples and whether or not the drugs may have any significant effects.
+
+# Assumptions
+
+### Assumption #1: \textnormal{Your dependent variable should be measured at the continuous level (i.e., they are interval or ratio variables).}
+
+### Assumption #2: \textnormal{Your two independent variables should each consist of two or more categorical, independent groups.}
+
+### Assumption #3: \textnormal{You should have independence of observations, which means that there is no relationship between the observations in each group or between the groups themselves.}
+
+### Assumption #4: \textnormal{There should be no significant outliers.}
+
+### Assumption #5: \textnormal{Your dependent variable should be approximately normally distributed for each combination of the groups of the two independent variables.}
+
+### Assumption #6. \textnormal{There needs to be homogeneity of variances for each combination of the groups of the two independent variables.}
+
+# Hypotheses
+
+## A. Training Day Errors
+
+### Main Effect of AD Status
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Null Hypothesis $(H_0)$:** There is no difference in mean training day errors between transgenic mice and wild type mice.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Alternative Hypothesis $(H_A)$:** There is a difference in mean training day errors between transgenic mice and wild type mice.
+     
+
+### Main Effect of Drug Treatment
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Null Hypothesis $(H_0)$:** There is no difference in mean training day errors among the four drug treatments.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Alternative Hypothesis $(H_A)$:** At least one drug treatment has a different mean training day error.
+
+### Interaction Effect
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Null Hypothesis $(H_0)$:** There is no interaction between AD status and drug treatment on training day errors.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Alternative Hypothesis $(H_A)$:**: There is an interaction between AD status and drug treatment on training day errors.
+
+## B. Memory Day Errors
+
+### Main Effect of AD Status
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Null Hypothesis $(H_0)$:** There is no difference in mean memory day errors between transgenic mice and wild type mice.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Alternative Hypothesis $(H_A)$:** There is a difference in mean memory day errors between transgenic mice and wild type mice.
+
+### Main Effect of Drug Treatment
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Null Hypothesis $(H_0)$:** There is no difference in mean memory day errors among the four drug treatments.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Alternative Hypothesis $(H_A)$:** At least one drug treatment has a different mean memory day error.
+
+### Interaction Effect
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Null Hypothesis $(H_0)$:** There is no interaction between AD status and drug treatment on memory day errors.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Alternative Hypothesis $(H_A)$:** There is an interaction between AD status and drug treatment on memory day errors.
+
+# Checking of Assumptions
+
+### Assumption #1: \textnormal{Your dependent variable should be measured at the continuous level (i.e., they are interval or ratio variables).}
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: The dependent variables, training day errors and memory day errors, are continuous.
+
+### Assumption #2: \textnormal{Your two independent variables should each consist of two or more categorical, independent groups.}
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: The independent variables, AD status and drug treatment, are categorical with two and four levels, respectively.
+
+### Assumption #3: \textnormal{You should have independence of observations, which means that there is no relationship between the observations in each group or between the groups themselves.}
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: Observations are independent as each mouse was measured once and assigned to only one treatment condition.
+
+### Assumption #4: \textnormal{There should be no significant outliers.}
+
+```{r}
+ggplot(df, aes(x = Treatment, y = Training, fill = AD_Status)) +
+geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+geom_jitter(width = 0.1, alpha = 0.6) +
+theme_minimal() +
+labs(title = "Training Day Errors by Treatment and AD Status")
+```
+
+```{r}
+ggplot(df, aes(x = Treatment, y = Memory, fill = AD_Status)) +
+geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+geom_jitter(width = 0.1, alpha = 0.6) +
+theme_minimal() +
+labs(title = "Memory Day Errors by Treatment and AD Status")
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: No significant outliers were detected based on visual inspection of the boxplots.
+
+### Assumption #5: \textnormal{Your dependent variable should be approximately normally distributed for each combination of the groups of the two independent variables.}
+```{r}
+shapiro_training <- df %>%
+group_by(AD_Status, Treatment) %>%
+summarise(p = shapiro.test(Training)$p.value, .groups = "drop")
+
+kable(shapiro_training, caption = "Shapiro–Wilk Test for Training Day Errors")
+```
+
+```{r}
+shapiro_memory <- df %>%
+group_by(AD_Status, Treatment) %>%
+summarise(p = shapiro.test(Memory)$p.value, .groups = "drop")
+
+kable(shapiro_memory, caption = "Shapiro–Wilk Test for Memory Day Errors")
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: Normality was satisfied for all groups as assessed by Shapiro–Wilk tests ($p > .05$).
+
+### Assumption #6. \textnormal{There needs to be homogeneity of variances for each combination of the groups of the two independent variables.}
+```{r}
+levene_training <- leveneTest(Training ~ AD_Status * Treatment, data = df)
+levene_memory <- leveneTest(Memory ~ AD_Status * Treatment, data = df)
+
+kable(as.data.frame(levene_training), caption = "Levene’s Test – Training Day Errors")
+kable(as.data.frame(levene_memory), caption = "Levene’s Test – Memory Day Errors")
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Remark**: Homogeneity of variances was met for both dependent variables ($p > .05$).
+
+# Computation 
+
+## Descriptive Statistics
+```{r}
+desc_stats <- df %>%
+group_by(AD_Status, Treatment) %>%
+summarise(
+Training_Mean = mean(Training),
+Training_SD = sd(Training),
+Memory_Mean = mean(Memory),
+Memory_SD = sd(Memory),
+.groups = "drop"
+)
+
+kable(desc_stats, caption = "Descriptive Statistics by AD Status and Treatment")
+```
+
+## Two-Way ANOVA Tests
+```{r}
+anova_training <- anova_test(
+data = df,
+dv = Training,
+between = c(AD_Status, Treatment),
+effect.size = "pes"
+)
+
+anova_memory <- anova_test(
+data = df,
+dv = Memory,
+between = c(AD_Status, Treatment),
+effect.size = "pes"
+)
+
+kable(anova_training, caption = "Two-Way ANOVA Results – Training Day Errors")
+kable(anova_memory, caption = "Two-Way ANOVA Results – Memory Day Errors")
+```
+
+## Interaction Plots
+```{r}
+ggplot(df, aes(x = Treatment, y = Training, color = AD_Status, group = AD_Status)) +
+stat_summary(fun = mean, geom = "point", size = 3) +
+stat_summary(fun = mean, geom = "line") +
+stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2) +
+theme_minimal()
+```
+
+```{r}
+ggplot(df, aes(x = Treatment, y = Memory, color = AD_Status, group = AD_Status)) +
+stat_summary(fun = mean, geom = "point", size = 3) +
+stat_summary(fun = mean, geom = "line") +
+stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2) +
+theme_minimal()
+
+```
+
+# Reporting
+
+In this study the researchers employed the two-way between-subjects ANOVA evaluate the effects of AD status and drug treatment on maze performance during the Training Day and Memory Day. In the analysis, no notable outliers were found when boxplots were examined visually. Levene's test indicated that homogeneity of variances was met, and Shapiro-Wilk tests indicated that normality was satisfied.
+
+For Training Day errors, the transgenic mice made more mistakes than wild type mice, according to the ANOVA. This showed a statistically significant effect of AD status with drug therapy also having a noteworthy effect.  Nonetheless, there was no statistically significant interaction between AD status and drug treatment, indicating that the impact of drug treatment on training performance was independent of AD status.
+
+For Memory Day errors, the results showed that AD status hada statistically significant effect, with transgenic mice making more mistakes than wild type mice.  Furthermore, there was a statistically significant interaction between AD status and medication treatment, suggesting that the impact of medication treatments on memory performance varied based on AD status.
+
+# Conclusion
+
+Concluding this study, both AD status and drug treatment had significant results that it could be inferred that it has a direct influence on the maze performances of the mice. While training performance showed consistent effects across groups, memory performance was differentially affected by drug treatment depending on Alzheimer’s disease status. The findings of the study suggest that there are certain drug treatments that prove to be more effective in the mitigation of memory-related deficiency. This highlights the importance of considering disease status when evaluating pharmacological interventions.
